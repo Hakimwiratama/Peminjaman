@@ -2,14 +2,18 @@
 
 SIPINTAR adalah aplikasi multi-institusi untuk peminjaman barang, buku, alat laboratorium, dan ruangan. Teknologi yang digunakan PHP 8.1+, MySQL, PDO, HTML, CSS, dan JavaScript.
 
-## Menjalankan dengan Laragon
+## Menjalankan aplikasi secara lokal dengan Laragon
 
-1. Letakkan folder proyek di `C:\laragon\www\pinjaman` (atau document root Laragon Anda).
-2. Jalankan Apache dan MySQL dari Laragon.
+GitHub Pages hanya menampilkan dokumentasi ini; aplikasi SIPINTAR membutuhkan PHP dan MySQL, jadi jalankan melalui Apache Laragon.
+
+1. Letakkan folder proyek sehingga file `index.php` berada di `C:\laragon\www\pinjaman\index.php`.
+2. Jalankan Apache dan MySQL dari Laragon. Pastikan indikator keduanya berjalan.
 3. Buat database `sipintar`, lalu impor `database/sipintar.sql` dan `database/regions.sql` secara berurutan untuk instalasi baru.
 4. Salin `config/config.example.php` menjadi `config/config.php`, sesuaikan koneksi lokal, atau set environment `SIPINTAR_DB_HOST`, `SIPINTAR_DB_PORT`, `SIPINTAR_DB_NAME`, `SIPINTAR_DB_USER`, dan `SIPINTAR_DB_PASSWORD`. File `config/config.php` tidak disertakan di Git agar kredensial lokal tidak terunggah.
-5. Dari terminal pada folder proyek, jalankan `php scripts/seed.php` untuk membuat akun demo dan data contoh.
-6. Buka `http://localhost/pinjaman/` (atau domain virtual host Laragon yang diarahkan ke folder proyek).
+5. Dari Laragon Terminal, buka folder proyek lalu jalankan `php scripts/seed.php` untuk membuat akun demo dan data contoh.
+6. Buka `http://localhost/pinjaman/`. Jangan gunakan `http://localhost/`, karena alamat itu menampilkan halaman root Laragon, bukan aplikasi di dalam folder `pinjaman`.
+
+Jika isi proyek diletakkan langsung di `C:\laragon\www` (sehingga file `index.php` aplikasi berada di `C:\laragon\www\index.php`), alamatnya menjadi `http://localhost/`. Pilih alamat yang sesuai dengan lokasi file `index.php` aplikasi.
 
 Untuk instalasi SIPINTAR lama, cadangkan database lalu jalankan `database/migrate_multitenant.sql` bila belum pernah dijalankan, kemudian `database/migrate_regions.sql` dan `database/regions.sql` sebelum menjalankan seed. Setiap migrasi hanya dijalankan **satu kali**. Jangan jalankan migrasi tersebut pada database baru.
 
