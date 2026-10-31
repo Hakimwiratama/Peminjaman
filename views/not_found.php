@@ -1,0 +1,1 @@
+<section class="panel empty-state"><span>404</span><strong>Halaman tidak ditemukan</strong><p>Halaman yang Anda cari tidak tersedia.</p><a class="btn btn-primary" href="?page=dashboard">Kembali ke dashboard</a></section>
