@@ -16,6 +16,17 @@ CREATE TABLE IF NOT EXISTS region_codes (
     INDEX idx_region_codes_parent (parent_code, name)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS school_directory (
+    school_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    npsn VARCHAR(20) NULL,
+    name VARCHAR(255) NOT NULL,
+    province_code VARCHAR(13) NOT NULL,
+    regency_code VARCHAR(13) NOT NULL,
+    school_type VARCHAR(40) NOT NULL,
+    INDEX idx_school_directory_region_name (province_code, regency_code, name),
+    INDEX idx_school_directory_npsn (npsn)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS institutions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(180) NOT NULL,

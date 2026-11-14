@@ -111,12 +111,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateInstitutions();
 
         institutionSearch?.addEventListener('input', () => {
-            const query = institutionSearch.value.trim().toLocaleLowerCase('id');
+            const normalizeQuery = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLocaleLowerCase('id').replace(/[^a-z0-9]/g, '');
+            const query = normalizeQuery(institutionSearch.value.trim());
             const matching = [...institutionOptions.options].filter((option) =>
                 option.value &&
                 option.dataset.province === province.value &&
                 option.dataset.regency === regency.value &&
-                option.textContent.toLocaleLowerCase('id').includes(query)
+                normalizeQuery(option.textContent).includes(query)
             );
             institutionResults.replaceChildren();
             if (!matching.length) {
@@ -153,21 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let timer;
         let controller;
 
-        const normalize = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
-            .replace(/^KAB(?:UPATEN)?\.?\s+ADM(?:INISTRASI)?\.?\s*/, '')
-            .replace(/^KABUPATEN ADMINISTRASI\s*/, '')
-            .replace(/^KAB(?:UPATEN)?\.?\s*/, '')
-            .replace(/^KOTA ADM\.?\s*/, '')
-            .replace(/^KOTA ADMINISTRASI\s*/, '')
-            .replace(/^KOTA\s*/, '')
-            .replace(/^PROVINSI\s*/, '')
-            .trim();
-        const normalizeProvince = (value) => {
-            const normalized = normalize(value);
-            if (normalized.includes('JAKARTA')) return 'DKI JAKARTA';
-            if (normalized.includes('YOGYAKARTA')) return 'DI YOGYAKARTA';
-            return normalized;
-        };
         const clearResults = () => {
             results.replaceChildren();
             results.hidden = true;
@@ -186,45 +173,53 @@ document.addEventListener('DOMContentLoaded', () => {
             const query = input.value.trim();
             if (type.value !== 'school') {
                 npsn.value = '';
-                hint.textContent = 'Direktori nasional yang tersedia saat ini memuat sekolah. Nama perguruan tinggi dapat dimasukkan manual dan akan diverifikasi admin.';
+                hint.textContent = 'Direktori nasional memuat sekolah. Nama perguruan tinggi dapat dimasukkan manual dan akan diverifikasi admin.';
                 clearResults();
                 return;
             }
-            hint.textContent = 'Cari nama sekolah di direktori Dapodik. Jika tidak ditemukan, nama dapat dimasukkan manual dan akan diverifikasi admin.';
-            if (query.length < 3 || !province.value || !regency.value) {
+            hint.textContent = 'Daftar sekolah mengikuti daerah yang dipilih. Jika tidak ditemukan, nama dapat dimasukkan manual dan akan diverifikasi admin.';
+            if (!province.value || !regency.value) {
                 clearResults();
                 return;
             }
             controller = new AbortController();
-            showMessage('Mencari sekolah di daerah yang dipilih…');
+            showMessage(query ? 'Mencari sekolah di daerah yang dipilih…' : 'Memuat daftar sekolah di daerah yang dipilih…');
             try {
-                const url = new URL('https://api.ibnuhabib.web.id/api/v1/schools/search');
-                url.search = new URLSearchParams({ q: query, limit: '100' }).toString();
+                const url = new URL(window.location.href);
+                url.searchParams.set('directory', 'schools');
+                url.searchParams.set('province_code', province.value);
+                url.searchParams.set('regency_code', regency.value);
+                if (query) url.searchParams.set('q', query);
+                else url.searchParams.delete('q');
                 const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
-                if (!response.ok) throw new Error(`Layanan direktori merespons ${response.status}.`);
+                if (!response.ok) throw new Error(`Direktori sekolah merespons ${response.status}.`);
                 const data = await response.json();
-                if (!Array.isArray(data.items)) throw new Error('Format data direktori tidak dikenali.');
-                const selectedProvince = normalizeProvince(province.selectedOptions[0]?.textContent || '');
-                const selectedRegency = normalize(regency.selectedOptions[0]?.textContent || '');
+                if (!Array.isArray(data.items)) throw new Error(data.error || 'Format data direktori tidak dikenali.');
                 const matches = data.items.filter((school) =>
-                    school && typeof school.name === 'string' && typeof school.npsn === 'string' &&
-                    typeof school.province === 'string' && typeof school.city === 'string' &&
-                    normalizeProvince(school.province || '') === selectedProvince &&
-                    normalize(school.city || '') === selectedRegency
-                ).slice(0, 20);
+                    school && typeof school.name === 'string' && (typeof school.npsn === 'string' || school.npsn === null) &&
+                    typeof school.school_type === 'string'
+                );
                 clearResults();
                 if (!matches.length) {
-                    showMessage('Tidak ada hasil yang cocok pada pencarian ini untuk daerah tersebut. Coba kata kunci lebih spesifik atau isi nama sekolah manual.');
+                    showMessage(query
+                        ? 'Tidak ditemukan sekolah yang cocok di daerah ini. Coba kata kunci lain atau isi nama sekolah manual.'
+                        : 'Belum ada sekolah di direktori untuk daerah ini. Nama sekolah dapat diisi manual.');
                     return;
+                }
+                if (data.total > matches.length) {
+                    const message = document.createElement('p');
+                    message.className = 'directory-message';
+                    message.textContent = `Menampilkan 20 dari ${data.total} sekolah. Ketik nama sekolah agar pencarian lebih spesifik.`;
+                    results.append(message);
                 }
                 matches.forEach((school) => {
                     const button = document.createElement('button');
                     button.type = 'button';
                     button.className = 'directory-result';
-                    button.textContent = `${school.name} · ${school.type} · NPSN ${school.npsn}`;
+                    button.textContent = `${school.name} · ${school.school_type}${school.npsn ? ` · NPSN ${school.npsn}` : ''}`;
                     button.addEventListener('click', () => {
                         input.value = school.name;
-                        npsn.value = school.npsn;
+                        npsn.value = school.npsn || '';
                         clearResults();
                     });
                     results.append(button);
@@ -245,10 +240,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         input.addEventListener('input', queueSearch);
         province.addEventListener('change', () => {
+            input.value = '';
             npsn.value = '';
             queueSearch();
         });
         regency.addEventListener('change', () => {
+            input.value = '';
             npsn.value = '';
             queueSearch();
         });

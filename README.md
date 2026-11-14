@@ -10,14 +10,14 @@ GitHub Pages hanya menampilkan dokumentasi ini; aplikasi SIPINTAR membutuhkan PH
 2. Jalankan Apache dan MySQL dari Laragon. Pastikan indikator keduanya berjalan.
 3. Buat database `sipintar`, lalu impor `database/sipintar.sql` dan `database/regions.sql` secara berurutan untuk instalasi baru.
 4. Salin `config/config.example.php` menjadi `config/config.php`, sesuaikan koneksi lokal, atau set environment `SIPINTAR_DB_HOST`, `SIPINTAR_DB_PORT`, `SIPINTAR_DB_NAME`, `SIPINTAR_DB_USER`, dan `SIPINTAR_DB_PASSWORD`. File `config/config.php` tidak disertakan di Git agar kredensial lokal tidak terunggah.
-5. Dari Laragon Terminal, buka folder proyek lalu jalankan `php scripts/seed.php` untuk membuat akun demo dan data contoh.
+5. Dari Laragon Terminal, buka folder proyek lalu jalankan `php scripts/import_school_directory.php` untuk mengunduh dan mengimpor direktori nasional sekolah. Jalankan `php scripts/seed.php` untuk membuat akun demo dan data contoh.
 6. Buka `http://localhost/pinjaman/`. Jangan gunakan `http://localhost/`, karena alamat itu menampilkan halaman root Laragon, bukan aplikasi di dalam folder `pinjaman`.
 
 Jika isi proyek diletakkan langsung di `C:\laragon\www` (sehingga file `index.php` aplikasi berada di `C:\laragon\www\index.php`), alamatnya menjadi `http://localhost/`. Pilih alamat yang sesuai dengan lokasi file `index.php` aplikasi.
 
 Untuk instalasi SIPINTAR lama, cadangkan database lalu jalankan `database/migrate_multitenant.sql` bila belum pernah dijalankan, kemudian `database/migrate_regions.sql` dan `database/regions.sql` sebelum menjalankan seed. Setiap migrasi hanya dijalankan **satu kali**. Jangan jalankan migrasi tersebut pada database baru.
 
-Ekstensi PHP yang dibutuhkan: `pdo_mysql`, `fileinfo`, dan `mbstring`. Folder `uploads/` perlu dapat ditulisi oleh Apache bila fitur foto inventaris digunakan.
+Ekstensi PHP yang dibutuhkan: `pdo_mysql`, `fileinfo`, dan `mbstring`; impor direktori sekolah juga membutuhkan `curl`. Folder `uploads/` perlu dapat ditulisi oleh Apache bila fitur foto inventaris digunakan.
 
 ## Akun demo
 
@@ -30,7 +30,7 @@ Ekstensi PHP yang dibutuhkan: `pdo_mysql`, `fileinfo`, dan `mbstring`. Folder `u
 
 Kredensial tersebut hanya untuk pengujian lokal; ganti sebelum aplikasi digunakan sungguhan. Pengguna baru memilih **Pihak sekolah/kampus** untuk mendaftarkan nama, daerah, alamat, akun admin, dan layanan Barang/Buku/Ruangan, atau **Siswa/mahasiswa** untuk memilih daerah lalu mendaftar pada institusi aktif di kabupaten/kota tersebut. Portal institusi dibuka setelah admin pusat menyetujui pendaftaran. Admin SIPINTAR perlu mengatur daerah institusi lama melalui halaman **Kelola institusi** agar dapat ditemukan melalui filter wilayah.
 
-Pilihan wilayah memuat 38 provinsi dan 514 kabupaten/kota berdasarkan dataset kode wilayah Kepmendagri 2025 dari [cahyadsn/wilayah](https://github.com/cahyadsn/wilayah); lisensi MIT tercantum di `database/region_data_license.txt`. Pencarian nama sekolah mengakses direktori Dapodik publik milik [dataset-sekolah-indonesia](https://github.com/prodhokter/dataset-sekolah-indonesia) melalui API pihak ketiga. Pencarian memerlukan koneksi internet; nama sekolah yang tidak ditemukan dapat dimasukkan manual dan akan menunggu verifikasi admin. Direktori kampus nasional yang resmi dan berlisensi jelas belum tersedia untuk diimpor, sehingga nama perguruan tinggi diisi manual dan diverifikasi admin.
+Pilihan wilayah memuat 38 provinsi dan 514 kabupaten/kota berdasarkan dataset kode wilayah Kepmendagri 2025 dari [cahyadsn/wilayah](https://github.com/cahyadsn/wilayah); lisensi MIT tercantum di `database/region_data_license.txt`. Sumber [dataset-sekolah-indonesia](https://github.com/prodhokter/dataset-sekolah-indonesia) (MIT) berisi 547.019 satuan pendidikan. Jalankan `php scripts/import_school_directory.php` untuk mengisi atau memperbarui direktori lokal, yang menghubungkan sekolah ke kabupaten/kota dari pilihan wilayah SIPINTAR. Pendaftaran sekolah dapat mencari nama di daerah yang dipilih atau mengisi nama manual; semua pendaftaran tetap menunggu verifikasi admin. Nama perguruan tinggi masih dapat diisi manual dan diverifikasi admin.
 
 ## Fitur yang tersedia
 

@@ -2,6 +2,51 @@
 declare(strict_types=1);
 require __DIR__ . '/app/bootstrap.php';
 
+if (($_GET['directory'] ?? '') === 'schools') {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $provinceCode = trim((string) ($_GET['province_code'] ?? ''));
+    $regencyCode = trim((string) ($_GET['regency_code'] ?? ''));
+    if (!valid_region_pair($pdo, $provinceCode, $regencyCode)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Pilih provinsi dan kabupaten/kota yang sesuai.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $query = trim((string) ($_GET['q'] ?? ''));
+    $query = mb_substr($query, 0, 100, 'UTF-8');
+    $sql = 'SELECT npsn,name,school_type FROM school_directory WHERE province_code=? AND regency_code=?';
+    $params = [$provinceCode, $regencyCode];
+    if ($query !== '') {
+        $sql .= ' AND name LIKE ?';
+        $params[] = '%' . $query . '%';
+    }
+    $sql .= ' ORDER BY name LIMIT 20';
+
+    try {
+        $countSql = 'SELECT COUNT(*) FROM school_directory WHERE province_code=? AND regency_code=?';
+        $countParams = [$provinceCode, $regencyCode];
+        if ($query !== '') {
+            $countSql .= ' AND name LIKE ?';
+            $countParams[] = '%' . $query . '%';
+        }
+        $countStmt = $pdo->prepare($countSql);
+        $countStmt->execute($countParams);
+        $total = (int) $countStmt->fetchColumn();
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $items = $stmt->fetchAll();
+    } catch (PDOException $exception) {
+        error_log($exception->getMessage());
+        http_response_code(503);
+        echo json_encode(['error' => 'Direktori sekolah belum tersedia. Jalankan scripts/import_school_directory.php terlebih dahulu.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    echo json_encode(['items' => $items, 'total' => $total], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
+}
+
 if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     require_role(['admin','institution_admin','staff']);
     [$filterSql,$filterParams]=report_filters();
